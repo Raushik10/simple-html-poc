@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>POC page</title>
+  <script src="config.js"></script>
+</head>
+<body style="font-family:system-ui;margin:3rem">
+  <h1>Hello from the POC</h1>
+  <p>Environment: <b id="env">unknown</b></p>
+  <p>Version (commit): <code>__VERSION__</code></p>
+  <script>document.getElementById('env').textContent = window.ENV_NAME || 'local';</script>
+</body>
+</html>

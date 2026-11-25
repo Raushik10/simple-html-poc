@@ -1,0 +1,3 @@
+envName: production
+replicaCount: 2
+imagePullSecret: ghcr-pull

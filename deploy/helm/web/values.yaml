@@ -1,0 +1,6 @@
+image:
+  repository: web
+  tag: dev
+replicaCount: 1
+envName: dev
+imagePullSecret: ""

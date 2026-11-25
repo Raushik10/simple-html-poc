@@ -1,0 +1,52 @@
+name: release
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+jobs:
+  verify-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Image must already exist
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IMAGE="ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')/web"
+          echo "$TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker manifest inspect "$IMAGE:${{ github.sha }}"
+
+  deploy-prod:
+    needs: verify-image
+    runs-on: [self-hosted, minikube]
+    environment: production
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image name
+        run: echo "IMAGE=ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')/web" >> "$GITHUB_ENV"
+      - name: Use minikube
+        run: kubectl config use-context poc
+      - name: Pull secret
+        env:
+          GHCR_USER: ${{ github.repository_owner }}
+          GHCR_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+        run: |
+          kubectl -n prod create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io --docker-username="$GHCR_USER" \
+            --docker-password="$GHCR_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
+      - name: Deploy the image that passed staging
+        run: |
+          helm upgrade --install web deploy/helm/web -n prod \
+            -f deploy/envs/prod/values.yaml \
+            --set image.repository="$IMAGE" --set image.tag="${{ github.sha }}" \
+            --atomic --timeout 3m
+      - name: Smoke test
+        run: helm test web -n prod --timeout 2m

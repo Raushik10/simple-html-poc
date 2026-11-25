@@ -1,0 +1,3 @@
+envName: staging
+replicaCount: 1
+imagePullSecret: ghcr-pull
