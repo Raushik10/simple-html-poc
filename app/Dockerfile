@@ -1,4 +1,5 @@
 FROM nginx:stable-alpine
+ARG VERSION=dev
 RUN apk upgrade --no-cache
 COPY index.html /usr/share/nginx/html/index.html
 COPY config.js /usr/share/nginx/html/config.js
